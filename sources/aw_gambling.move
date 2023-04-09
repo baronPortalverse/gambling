@@ -14,6 +14,72 @@ module aw_gambling::GAMBLING{
     // use std::option::{Self, Option};
     // use std::randomness;
 
+
+    // rounds
+    const TOTAL_ROUNDS: u8 = 6;
+    // player A, B, C, D
+    struct Player {
+        name: vector<u8>,
+        win: u8
+    }
+    
+    // bet
+    struct Bet {
+        bettor: address,
+        round: u8,
+        choice: vector<u8>
+    }
+
+    // global 
+    struct Betting {
+        admin: address,
+        players: vector<Player>,
+        bets: vector<Bet>,
+        round_winners: vector<u8>,
+        rounds: u8
+    }
+
+    public fun init() {
+        let players: vector<Player> = [
+            Player {name: "A", win: 0},
+            Player {name: "B", win: 0},
+            Player {name: "C", win: 0},
+            Player {name: "D", win: 0}
+        ];
+        let empty_bets: vector<Bet> = [];
+        let empty_round_winners: vector<string> = [];
+        move_to(Betting {
+            admin: move_sender(),
+            players: players,
+            bets: empty_bets,
+            round_winners: empty_round_winners,
+            rounds: TOTAL_ROUNDS
+        });
+    }
+
+
+    // set players
+    public fun set_players(round: u8, player1: string, player2: string) {
+        let sender = move_sender();
+        let mut betting = borrow_global_mut::<Betting>();
+        assert(sender == betting.admin, 1001); // 只有管理员可以设置比赛选手
+        assert(round <= betting.rounds, 1002); // 比赛轮数不能超过总轮数
+        betting.players.push(Player {name: player1, win: 0});
+        betting.players.push(Player {name: player2, win: 0});
+    }
+
+    // select player
+    public fun bet(round: u8, choice: string) {
+      let sender = move_sender();
+      let betting = borrow_global::<Betting>();
+      assert(round <= betting.rounds, 1003); // 比赛轮数不能超过总轮数
+      let mut betting = borrow_global_mut::<Betting>();
+      betting.bets.push(Bet {bettor: sender, round: round, choice: choice});
+  }
+
+
+    
+
     /// User doesn't have enough coins to play 
     const ENotEnoughMoney: u64 = 1;
     const EOutOfService: u64 = 2;
@@ -27,7 +93,7 @@ module aw_gambling::GAMBLING{
     struct FlipperOwner has key, store
     {
         id: UID
-        }
+    }
 
     struct GambleEvent has copy, drop
     {
@@ -35,7 +101,7 @@ module aw_gambling::GAMBLING{
         winnings: u64,
         gambler: address,
         coin_side: u8,
-        }
+    }
 
     struct Flipper has key,store 
     {
@@ -44,22 +110,22 @@ module aw_gambling::GAMBLING{
         description: String,
         flipper_balance: Balance<SUI>,
         counter: u64
-        }
+    }
 
     public fun name(self: &Flipper): String
     { 
         self.name  
-        }
+    }
 
     public fun description(self: &Flipper): String
     { 
         self.description 
-        }
+    }
 
     public fun casino_balance(self:  &Flipper): u64
     {
        balance::value<SUI>(&self.flipper_balance)
-       }
+    }
 
 
     // initialize  Flipper
@@ -72,7 +138,8 @@ module aw_gambling::GAMBLING{
             description: string::utf8(b"Coin Flipper gambler based on SUI-coin"),
             flipper_balance: balance::zero(),
             counter: 0
-        });}
+        });
+    }
 
 
 
@@ -85,7 +152,8 @@ module aw_gambling::GAMBLING{
         let balance = coin::balance_mut(payment);
         let payment = balance::split(balance, amount);
 
-        balance::join(&mut flipper.flipper_balance, payment);}
+        balance::join(&mut flipper.flipper_balance, payment);
+    }
 
     // let's play a game
     public entry fun gamble(flipper: &mut Flipper, assumption:vector<u8>, bet: u64, wallet: &mut Coin<SUI>, ctx: &mut TxContext){
@@ -159,7 +227,7 @@ module aw_gambling::GAMBLING{
 
         balance::join(&mut flipper.flipper_balance, payment);
         
-        }
+    }
 
 
     
@@ -185,7 +253,7 @@ module aw_gambling::GAMBLING{
         vec
         
     }
-    
+
     /*
        A function for admins to get their profits.
     */
