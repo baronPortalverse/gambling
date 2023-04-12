@@ -1,0 +1,15 @@
+Ctrl-R to search the command history.
+
+sui client gas
+
+sui client new-address secp256k1   //ed25519 or secp256k1 or secp256r1.
+
+sui client objects  // to view the objects an address owns.
+
+sui client object <OBJECT_ID> // more information about an object  --json
+
+
+
+
+
+

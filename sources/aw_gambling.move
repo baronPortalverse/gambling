@@ -10,277 +10,176 @@ module aw_gambling::GAMBLING{
     use std::vector;
     use sui::event;
     use sui::coin::{Self, Coin};
-    // use games::drand_lib::{derive_randomness, verify_drand_signature};
-    // use std::option::{Self, Option};
-    // use std::randomness;
 
-
-    // rounds
-    const TOTAL_ROUNDS: u8 = 6;
-    // player A, B, C, D
-    struct Player {
-        name: vector<u8>,
-        win: u8
-    }
-    
-    // bet
-    struct Bet {
-        bettor: address,
-        round: u8,
-        choice: vector<u8>
-    }
-
-    // global 
-    struct Betting {
-        admin: address,
-        players: vector<Player>,
-        bets: vector<Bet>,
-        round_winners: vector<u8>,
-        rounds: u8
-    }
-
-    public fun init() {
-        let players: vector<Player> = [
-            Player {name: "A", win: 0},
-            Player {name: "B", win: 0},
-            Player {name: "C", win: 0},
-            Player {name: "D", win: 0}
-        ];
-        let empty_bets: vector<Bet> = [];
-        let empty_round_winners: vector<string> = [];
-        move_to(Betting {
-            admin: move_sender(),
-            players: players,
-            bets: empty_bets,
-            round_winners: empty_round_winners,
-            rounds: TOTAL_ROUNDS
-        });
-    }
-
-
-    // set players
-    public fun set_players(round: u8, player1: string, player2: string) {
-        let sender = move_sender();
-        let mut betting = borrow_global_mut::<Betting>();
-        assert(sender == betting.admin, 1001); // 只有管理员可以设置比赛选手
-        assert(round <= betting.rounds, 1002); // 比赛轮数不能超过总轮数
-        betting.players.push(Player {name: player1, win: 0});
-        betting.players.push(Player {name: player2, win: 0});
-    }
-
-    // select player
-    public fun bet(round: u8, choice: string) {
-      let sender = move_sender();
-      let betting = borrow_global::<Betting>();
-      assert(round <= betting.rounds, 1003); // 比赛轮数不能超过总轮数
-      let mut betting = borrow_global_mut::<Betting>();
-      betting.bets.push(Bet {bettor: sender, round: round, choice: choice});
-  }
-
-
-    
-
-    /// User doesn't have enough coins to play 
-    const ENotEnoughMoney: u64 = 1;
-    const EOutOfService: u64 = 2;
-    const AmountOfCombinations: u8 = 2;
-
-    const Counter: u64 = 2;
-
-    const DRAND_PK: vector<u8> =
-        x"868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31";
-
-    struct FlipperOwner has key, store
+    struct GAMBLINGOwner has key, store
     {
         id: UID
     }
 
-    struct GambleEvent has copy, drop
-    {
-        id: ID,
-        winnings: u64,
-        gambler: address,
-        coin_side: u8,
+    // rounds
+    const TOTAL_ROUNDS: u8 = 6;
+
+    // player A, B, C, D
+    struct Player has store{
+        name: vector<u8>,
+        score: u8
+    }
+    
+    // Guesser
+    struct Guesser has store{
+        guesser: address,
+        choice: vector<u8>,
+        score: u8
     }
 
-    struct Flipper has key,store 
-    {
-        id: UID,
-        name: String,
-        description: String,
-        flipper_balance: Balance<SUI>,
-        counter: u64
+    // global 
+    struct Guessing has key, store {
+        //admin: address,
+        id:UID,
+        players: vector<Player>,
+        guessers: vector<Guesser>,
+        rounds: u8,
+        //round_winners: vector<u8>
     }
 
-    public fun name(self: &Flipper): String
-    { 
-        self.name  
-    }
-
-    public fun description(self: &Flipper): String
-    { 
-        self.description 
-    }
-
-    public fun casino_balance(self:  &Flipper): u64
-    {
-       balance::value<SUI>(&self.flipper_balance)
-    }
-
-
-    // initialize  Flipper
+    // initialize  func
     fun init(ctx: &mut TxContext) {
-        transfer::transfer(FlipperOwner{id: object::new(ctx)}, tx_context::sender(ctx));
-
-        transfer::share_object(Flipper {
+        transfer::transfer(GAMBLINGOwner{id: object::new(ctx)}, tx_context::sender(ctx));
+        let players: vector<Player> = vector[
+            Player {name: b"A", score: 0},
+            Player {name: b"B", score: 0},
+            Player {name: b"C", score: 0},
+            Player {name: b"D", score: 0}
+        ];
+        let empty_guessers: vector<Guesser> = vector[];
+        //let empty_round_winners: vector<Player> = vector[];
+        transfer::share_object(Guessing {
             id: object::new(ctx),
-            name: string::utf8(b"GAMBLING"),
-            description: string::utf8(b"Coin Flipper gambler based on SUI-coin"),
-            flipper_balance: balance::zero(),
-            counter: 0
+            //admin: tx_context::sender(ctx),
+            players: players,
+            guessers: empty_guessers,
+            rounds: TOTAL_ROUNDS,
+            //round_winners: empty_round_winners
         });
     }
 
-
-
-    // A function for admins to deposit money to the gambler so it can still function!  
-    public entry fun depositToCasino(_:&FlipperOwner, flipper :&mut Flipper, amount: u64, payment: &mut Coin<SUI>){
-
-        let availableCoins = coin::value(payment);
-        assert!(availableCoins > amount, ENotEnoughMoney);
-
-        let balance = coin::balance_mut(payment);
-        let payment = balance::split(balance, amount);
-
-        balance::join(&mut flipper.flipper_balance, payment);
+    // set players
+    public entry fun set_result(_: &GAMBLINGOwner, guessing: &mut Guessing, round: u8, winner: vector<u8>) {
+        assert!(round <= guessing.rounds, 1002);  
+        guessing.rounds = guessing.rounds+ 1;
+        debug::print(guessing);
     }
 
-    // let's play a game
-    public entry fun gamble(flipper: &mut Flipper, assumption:vector<u8>, bet: u64, wallet: &mut Coin<SUI>, ctx: &mut TxContext){
-
-        // calculate max user earnings through the casino
-        // let max_earnings = casino.cost_per_game ; // we calculate the maximum potential winnings on the casino.
-
-        // Make sure Casino has enough money to support this gameplay.
-        assert!(casino_balance(flipper) >= bet, EOutOfService);
-        // make sure we have enough money to play a game!
-        assert!(coin::value(wallet) >= bet, ENotEnoughMoney);
-
-
-        // get balance reference
-        let wallet_balance = coin::balance_mut(wallet);
-
-        // get money from balance
-        let payment = balance::split(wallet_balance, bet);
-
-        // add to casino's balance.
-        balance::join(&mut flipper.flipper_balance, payment);
-
-
-        let uid = object::new(ctx);
-        debug::print(ctx);
-
-
-        let randomNums = pseudoRandomNumGenerator(&uid,flipper);
-        let winnings = 0;
-
-        let coin_side = *vector::borrow(&randomNums, 0);
-
-        // debug::print(slot_1);
-
-        if(coin_side == 0 && assumption == b"tails"){
-            winnings = bet * 2  ; // calculate winnings + the money the user spent.
-            let payment = balance::split(&mut flipper.flipper_balance, winnings); // get from casino's balance.
-            balance::join(coin::balance_mut(wallet), payment); // add to user's wallet!
-            //add winnings to user's wallet
-        } else if(coin_side == 1 && assumption == b"heads"){
-            winnings = bet ; 
-            let payment = balance::split(&mut flipper.flipper_balance, winnings); // get from casino's balance.
-            balance::join(coin::balance_mut(wallet), payment); // add to user's wallet!
-            //add winnings to user's wallet
-        };
-
-        // emit event
-        event::emit( GambleEvent{
-            id: object::uid_to_inner(&uid),
-            gambler: tx_context::sender(ctx),
-            winnings,
-            coin_side,
-        });
-        
-        // delete unused id
-        debug::print(flipper);
-        object::delete(uid);
-
-        debug::print(&coin_side);
-
-        // now let's play   with luck!
-    }
-    
-    public entry fun deposit(flipper :&mut Flipper, amount: u64, payment: &mut Coin<SUI>){
-
-    let availableCoins = coin::value(payment);
-        assert!(availableCoins > amount, ENotEnoughMoney);
-
-        let balance = coin::balance_mut(payment);
-        let payment = balance::split(balance, amount);
-
-        balance::join(&mut flipper.flipper_balance, payment);
-        
+    // select player
+    public entry fun bet(round: u8, guessing: &mut Guessing, choice: vector<u8>) {
+      assert!(round <= guessing.rounds, 1003);  
+    //   guessing.guessers.push(Guesser {guesser: tx_context::sender(ctx), score: 0, choice: choice});
     }
 
 
-    
 
-    fun pseudoRandomNumGenerator(uid: &UID,flipper: &mut Flipper):vector<u8>{ 
-        
-        let any = sha2_256(DRAND_PK);
-        debug::print(&any);
-        
-        // create random ID
-        let random = object::uid_to_bytes(uid);
-        // let rand = object::to_bytes(any);
-        // debug::print(&rand);
-        let num_id = flipper.counter ;
-        let vec = vector::empty<u8>();
-        // add 1 random numbers based on UID of next tx ID.
-        vector::push_back(&mut vec, (*vector::borrow(&random, num_id) as u8) %AmountOfCombinations);
-        flipper.counter =  flipper.counter + 1;
-        if (flipper.counter == 5) { 
-            flipper.counter = 0
-            };
-        debug::print(flipper);
-        vec
-        
-    }
 
-    /*
-       A function for admins to get their profits.
-    */
-    public entry fun withdraw(_:&FlipperOwner, flipper: &mut Flipper, amount: u64, wallet: &mut Coin<SUI>){
+    // /// User doesn't have enough coins to play 
+    // const ENotEnoughMoney: u64 = 1;
+    // const EOutOfService: u64 = 2;
+    // const AmountOfCombinations: u8 = 2;
 
-        let availableCoins = casino_balance(flipper);
-        assert!(availableCoins > amount, ENotEnoughMoney);
+    // const Counter: u64 = 2;
 
-        let balance = coin::balance_mut(wallet);
+    // const DRAND_PK: vector<u8> =
+    //     x"868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31";
 
-        // split money from casino's balance.
-        let payment = balance::split(&mut flipper.flipper_balance, amount);
-
-        // execute the transaction
-        balance::join(balance, payment);
-    }
-    // public entry fun complete( drand_sig: vector<u8>, drand_prev_sig: vector<u8>) {
-    //     verify_drand_signature(drand_sig, drand_prev_sig, game.round);
-    //     // The randomness is derived from drand_sig by passing it through sha2_256 to make it uniform.
-    //     let digest = derive_randomness(drand_sig);
-    //     game.winner = option::some(safe_selection(game.participants, &digest));
+    // struct FlipperOwner has key, store
+    // {
+    //     id: UID
     // }
 
-    // public entry fun close( drand_sig: vector<u8>, drand_prev_sig: vector<u8>) {
-    //     assert!(game.status == IN_PROGRESS, EGameNotInProgress);
-    //     verify_drand_signature(drand_sig, drand_prev_sig, closing_round(game.round));
+    // struct GambleEvent has copy, drop
+    // {
+    //     id: ID,
+    //     winnings: u64,
+    //     gambler: address,
+    //     coin_side: u8,
     // }
+
+    // struct Flipper has key,store 
+    // {
+    //     id: UID,
+    //     name: String,
+    //     description: String,
+    //     flipper_balance: Balance<SUI>,
+    //     counter: u64
+    // }
+
+    // public fun name(self: &Flipper): String
+    // { 
+    //     self.name  
+    // }
+
+    // public fun casino_balance(self:  &Flipper): u64
+    // {
+    //    balance::value<SUI>(&self.flipper_balance)
+    // }
+
+
+
+
+    // // let's play a game
+    // public entry fun gamble(flipper: &mut Flipper, assumption:vector<u8>, bet: u64, wallet: &mut Coin<SUI>, ctx: &mut TxContext){
+
+    //     // calculate max user earnings through the casino
+    //     // let max_earnings = casino.cost_per_game ; // we calculate the maximum potential winnings on the casino.
+
+    //     // Make sure Casino has enough money to support this gameplay.
+    //     assert!(casino_balance(flipper) >= bet, EOutOfService);
+    //     // make sure we have enough money to play a game!
+    //     assert!(coin::value(wallet) >= bet, ENotEnoughMoney);
+
+
+    //     // get balance reference
+    //     let wallet_balance = coin::balance_mut(wallet);
+
+    //     // get money from balance
+    //     let payment = balance::split(wallet_balance, bet);
+
+    //     // add to casino's balance.
+    //     balance::join(&mut flipper.flipper_balance, payment);
+
+
+    //     let uid = object::new(ctx);
+    //     debug::print(ctx);
+
+
+    //     let randomNums = pseudoRandomNumGenerator(&uid,flipper);
+    //     let winnings = 0;
+
+    //     let coin_side = *vector::borrow(&randomNums, 0);
+
+    //     // debug::print(slot_1);
+
+    //     if(coin_side == 0 && assumption == b"tails"){
+    //         winnings = bet * 2  ; // calculate winnings + the money the user spent.
+    //         let payment = balance::split(&mut flipper.flipper_balance, winnings); // get from casino's balance.
+    //         balance::join(coin::balance_mut(wallet), payment); // add to user's wallet!
+    //         //add winnings to user's wallet
+    //     } else if(coin_side == 1 && assumption == b"heads"){
+    //         winnings = bet ; 
+    //         let payment = balance::split(&mut flipper.flipper_balance, winnings); // get from casino's balance.
+    //         balance::join(coin::balance_mut(wallet), payment); // add to user's wallet!
+    //         //add winnings to user's wallet
+    //     };
+
+    //     // emit event
+    //     event::emit( GambleEvent{
+    //         id: object::uid_to_inner(&uid),
+    //         gambler: tx_context::sender(ctx),
+    //         winnings,
+    //         coin_side,
+    //     });
+        
+    // }
+    
+
 
     #[test_only]
     
