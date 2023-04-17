@@ -10,6 +10,27 @@ sui client object <OBJECT_ID> // more information about an object  --json
 
 
 
+Sui faucet:
+curl --location --request POST 'https://faucet.devnet.sui.io/gas' \
+--header 'Content-Type: application/json' \
+--data-raw '{"FixedAmountRequest":{"recipient":"<WALLET ADDRESS>"}}'
+
+
+publish:
+sui client publish --gas-budget 30000
+sui client publish --path <absolute local path to the Sui Move package> --gas-budget 30000
+--skip-dependency-verification
+
+
+call:
+export PACKAGE_ID=<package object ID>
+sui client call --function mint --module managed --package $PACKAGE_ID --gas-budget 3000
+sui client call --function mint --module managed --package $PACKAGE_ID --args $TREASURYCAP_ID \"<amount to mint>\" <recipient address> --gas-budget 3000
+
+sui client call --function admin_transfer --module AWT --package 0x47612574417c83ea1a543451f56d2f8eabfe7886f74e27bec41701f7b789c862 --args 0x79b4eb1e8b95709dd11ac3505f3f197e258d0eae26e823de96348266ea8838a5 0x5d694937618333e7d92d30f073a22a868aaaadb2fbd4aa1453db6ce2f8f63a47 --gas-budget 3000
+
+
+
 
 
 
