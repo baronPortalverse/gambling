@@ -27,9 +27,9 @@ module aw_gambling::GAMBLING{
     }
     
     // Guesser
-    struct Guesser has store {
+    struct Guesser has store,copy {
         guesser: address,
-        choice: Table<u8, String>,
+        choice: VecMap<u8, String>,
         score: u8
     }
 
@@ -38,9 +38,8 @@ module aw_gambling::GAMBLING{
         //admin: address,
         id:UID,
         players: vector<Player>,
-        guessers: Table<address, Guesser>,
+        guessers: VecMap<address, Guesser>,
         //rounds: u8,
-        //round_winners: vector<u8>
     }
 
     // whitelist 
@@ -53,15 +52,13 @@ module aw_gambling::GAMBLING{
     #[expected_failure(abort_code = vec_map::EKeyAlreadyExists)]
     fun init(ctx: &mut TxContext) {
         transfer::transfer(GAMBLINGOwner{id: object::new(ctx)}, tx_context::sender(ctx));
-        //let m = vec_map::empty(); // 
-        //vec_map::insert(&mut m, k, v);
         let players: vector<Player> = vector[
             Player {name: string::utf8(b"A"), score: 0},
             Player {name: string::utf8(b"B"), score: 0},
             Player {name: string::utf8(b"C"), score: 0},
             Player {name: string::utf8(b"D"), score: 0}
         ];
-        let empty_guessers: Table<address, Guesser> = table::new(ctx);
+        let empty_guessers: VecMap<address, Guesser> = vec_map::empty(); //table::new(ctx);
         transfer::share_object(Guessing {
             id: object::new(ctx),
             players: players,
@@ -82,20 +79,19 @@ module aw_gambling::GAMBLING{
         //assert!(round <= guessing.rounds, 1003);  
         //guessing.guessers.push(Guesser {guesser: tx_context::sender(ctx), score: 0, choice: choice});
         let guesseraddress = tx_context::sender(ctx);
-        if (!table::contains(&guessing.guessers, guesseraddress)){
-            let choicet = table::new(ctx);
-            table::add(&mut choicet, round, choice);
-            table::add(&mut guessing.guessers, guesseraddress, Guesser { guesser: tx_context::sender(ctx),choice : choicet, score: 0 });
+        if (!vec_map::contains(&guessing.guessers, &guesseraddress)) {
+            let choicet:VecMap<u8, String> = vec_map::empty();
+            vec_map::insert(&mut choicet, round, choice);
+            vec_map::insert(&mut guessing.guessers, guesseraddress, Guesser { guesser: tx_context::sender(ctx),choice : choicet, score: 0 });
         }
         else{
-            let guesser = table::borrow_mut(&mut guessing.guessers, guesseraddress);
-            table::add(&mut guesser.choice, round, choice);
+            let guesser = vec_map::get_mut(&mut guessing.guessers, &guesseraddress);
+            vec_map::insert(&mut guesser.choice, round, choice);
         }
     }
 
     public entry fun get_guesser_score(guessing: &Guessing, guesseraddress: address, ctx: &mut TxContext): u8 {
-        // let guesseraddress = tx_context::sender(ctx);
-        let guesser = table::borrow(& guessing.guessers, guesseraddress);
+        let guesser = vec_map::get(& guessing.guessers, &guesseraddress);
         guesser.score
     }
 
@@ -106,19 +102,20 @@ module aw_gambling::GAMBLING{
         let i = 0;
         while (i < 4) {
             i = i + 1;
-            let player = vector::borrow(&guessing.players, i);
+            let player = vector::borrow_mut(&mut guessing.players, i);
             if (player.name == winner){
-                //player.score = player.score + 1;
+                player.score = player.score + 1;
             }
         };
 
         let j = 0;
-        while (j < table::length(&guessing.guessers)) {
+        let size = vec_map::size(&guessing.guessers);
+        while (j < size) {
             j = j + 1;
-            // let guesser = table::borrow(&guessing.players, i);
-            // if (guesser.name == winner){
-            //     //player.score = player.score + 1;
-            // }
+            let (gaddress, guesser) = vec_map::get_entry_by_idx_mut(&mut guessing.guessers, j);
+            if (*vec_map::get(&guesser.choice, &round) == winner){
+                guesser.score = guesser.score + 1;
+            }
         };
         debug::print(guessing);
     }
