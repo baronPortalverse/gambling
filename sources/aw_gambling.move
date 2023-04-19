@@ -39,7 +39,7 @@ module aw_gambling::GAMBLING{
         id:UID,
         players: vector<Player>,
         guessers: VecMap<address, Guesser>,
-        //rounds: u8,
+        round: u8,
     }
 
     // whitelist 
@@ -63,7 +63,7 @@ module aw_gambling::GAMBLING{
             id: object::new(ctx),
             players: players,
             guessers: empty_guessers,
-            //rounds: TOTAL_ROUNDS,
+            round: 0
             //round_winners: empty_round_winners
         });
         transfer::transfer( Wl{id: object::new(ctx), list: vector::empty<address>()}, tx_context::sender(ctx));
@@ -75,30 +75,32 @@ module aw_gambling::GAMBLING{
     }
 
     // select player
-    public entry fun bet(round: u8, guessing: &mut Guessing, choice: String, ctx: &mut TxContext) {  //wl: &Wl, 
+    public entry fun bet(guessing: &mut Guessing, choice: String, ctx: &mut TxContext) {  //wl: &Wl, 
         //assert!(round <= guessing.rounds, 1003);  
         //guessing.guessers.push(Guesser {guesser: tx_context::sender(ctx), score: 0, choice: choice});
         let guesseraddress = tx_context::sender(ctx);
         if (!vec_map::contains(&guessing.guessers, &guesseraddress)) {
             let choicet:VecMap<u8, String> = vec_map::empty();
-            vec_map::insert(&mut choicet, round, choice);
+            vec_map::insert(&mut choicet, guessing.round, choice);
             vec_map::insert(&mut guessing.guessers, guesseraddress, Guesser { guesser: tx_context::sender(ctx),choice : choicet, score: 0 });
         }
         else{
             let guesser = vec_map::get_mut(&mut guessing.guessers, &guesseraddress);
-            vec_map::insert(&mut guesser.choice, round, choice);
+            vec_map::insert(&mut guesser.choice, guessing.round, choice);
         }
     }
 
-    public entry fun get_guesser_score(guessing: &Guessing, guesseraddress: address, ctx: &mut TxContext): u8 {
+    public entry fun set_round(_: &GAMBLINGOwner, guessing: &mut Guessing, round: u8) {
+        guessing.round = round;
+    }
+
+    public entry fun get_guesser_score(guessing: &Guessing, guesseraddress: address): u8 {
         let guesser = vec_map::get(& guessing.guessers, &guesseraddress);
         guesser.score
     }
 
     // set players
     public entry fun close(_: &GAMBLINGOwner, guessing: &mut Guessing, round: u8, winner: String) {
-        //assert!(round <= guessing.rounds, 1002);  
-        //guessing.rounds = guessing.rounds+ 1;
         let i = 0;
         while (i < 4) {
             i = i + 1;
@@ -120,13 +122,7 @@ module aw_gambling::GAMBLING{
         debug::print(guessing);
     }
 
-    // public fun name(self: &Flipper): String
-    // { 
-    //     self.name  
-    // }
-
     #[test_only]
-    
     public fun init_for_testing(ctx: &mut TxContext) 
     {
         init(ctx);
