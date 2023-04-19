@@ -58,13 +58,12 @@ module aw_gambling::GAMBLING{
             Player {name: string::utf8(b"C"), score: 0},
             Player {name: string::utf8(b"D"), score: 0}
         ];
-        let empty_guessers: VecMap<address, Guesser> = vec_map::empty(); //table::new(ctx);
+        let empty_guessers: VecMap<address, Guesser> = vec_map::empty(); 
         transfer::share_object(Guessing {
             id: object::new(ctx),
             players: players,
             guessers: empty_guessers,
             round: 0
-            //round_winners: empty_round_winners
         });
         transfer::transfer( Wl{id: object::new(ctx), list: vector::empty<address>()}, tx_context::sender(ctx));
     }
@@ -76,8 +75,6 @@ module aw_gambling::GAMBLING{
 
     // select player
     public entry fun bet(guessing: &mut Guessing, choice: String, ctx: &mut TxContext) {  //wl: &Wl, 
-        //assert!(round <= guessing.rounds, 1003);  
-        //guessing.guessers.push(Guesser {guesser: tx_context::sender(ctx), score: 0, choice: choice});
         let guesseraddress = tx_context::sender(ctx);
         if (!vec_map::contains(&guessing.guessers, &guesseraddress)) {
             let choicet:VecMap<u8, String> = vec_map::empty();
