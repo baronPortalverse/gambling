@@ -4,17 +4,50 @@
 version = 0
 
 dependencies = [
-  { name = "Sui" },
+  { name = "examples" },
 ]
 
 [[move.package]]
 name = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "testnet", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "cab7e9762d4d75126a78fdd009b405745657fe57", subdir = "crates/sui-framework/packages/move-stdlib" }
+
+[[move.package]]
+name = "NftProtocol"
+source = { git = "git@github.com:Origin-Byte/nft-protocol.git", rev = "testnet", subdir = "" }
+
+dependencies = [
+  { name = "Originmate" },
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "Originmate"
+source = { git = "https://github.com/Origin-Byte/originmate.git", rev = "c43b53f5d8b519e86d4a64ad0cf6787a7528b01b", subdir = "" }
+
+dependencies = [
+  { name = "Sui" },
+]
 
 [[move.package]]
 name = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "testnet", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "cab7e9762d4d75126a78fdd009b405745657fe57", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { name = "MoveStdlib" },
+]
+
+[[move.package]]
+name = "examples"
+source = { git = "git@github.com:ENJOY-LAB/AbyssWorld.git", rev = "main", subdir = "./examples" }
+
+dependencies = [
+  { name = "nft" },
+]
+
+[[move.package]]
+name = "nft"
+source = { git = "git@github.com:ENJOY-LAB/AbyssWorld.git", rev = "main", subdir = "" }
+
+dependencies = [
+  { name = "NftProtocol" },
 ]

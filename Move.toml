@@ -3,7 +3,7 @@ name = "aw_gambling"
 version = "0.0.1"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
+examples = { git = "git@github.com:ENJOY-LAB/AbyssWorld.git", subdir = "./examples", rev = "main" }
 
 [addresses]
 aw_gambling =  "0x0"

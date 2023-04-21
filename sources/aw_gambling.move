@@ -10,6 +10,10 @@ module aw_gambling::GAMBLING{
     use sui::table::{Self, Table};
     use sui::object_table::{Self, ObjectTable};
     use sui::vec_map::{Self, VecMap};
+    use examples::check::check;
+    // may be collection::Abyss
+    use examples::collection::Gekacha;
+    use nft::souffl3::NFT;
 
     // Rounds
     const TOTAL_ROUNDS: u8 = 6;
@@ -71,6 +75,17 @@ module aw_gambling::GAMBLING{
     // add addresses 
     public entry fun add_wl(_: &GAMBLINGOwner, wl: &mut Wl,  wladdress: address) {
         vector::push_back(&mut wl.list, wladdress);
+    }
+
+    // support specific type of nft
+    public entry fun check_with_type(abyss_nft: &NFT<Gekacha>) {
+        check(abyss_nft);
+        //....
+    }
+
+    // support different type of nft
+    public entry fun check_withou_type<C>(abyss_nft: &NFT<C>) {
+        check<C>(abyss_nft);
     }
 
     // select player
