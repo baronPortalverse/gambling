@@ -1,10 +1,10 @@
 [package]
-name = "aw_gambling"
+name = "aw_guessing"
 version = "0.0.1"
 
 [dependencies]
-examples = { git = "git@github.com:ENJOY-LAB/AbyssWorld.git", subdir = "./examples", rev = "main" }
+examples = { git = "https://github.com/ENJOY-LAB/AbyssWorld.git", subdir = "./examples", rev = "main" }
 
 [addresses]
-aw_gambling =  "0x0"
+aw_guessing =  "0x0"
 sui =  "0000000000000000000000000000000000000000000000000000000000000002"
