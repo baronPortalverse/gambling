@@ -3,16 +3,9 @@ module aw_guessing::GUESSING{
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use std::string::{Self, String};
-    use std::hash::sha2_256;
-    use std::debug;
-    use std::vector;
-    use sui::coin::{Self, Coin};
-    use sui::table::{Self, Table};
-    use sui::object_table::{Self, ObjectTable};
     use sui::vec_map::{Self, VecMap};
-    use examples::check::check;
     use std::type_name;
-    // may be collection::Abyss
+    //examples::collection::Abyss
     use examples::collection::Gekacha;
     use nft::souffl3::NFT;
 
@@ -90,7 +83,12 @@ module aw_guessing::GUESSING{
     //     // guessing.b = &type_name::into_string(gekacha_type);
     // }
 
-    public entry fun final_winner(guessing: &mut Guessing, choice: String, ctx: &mut TxContext) { 
+    public entry fun final_winner<C: key + store>(abyss_nft: C, guessing: &mut Guessing, choice: String, ctx: &mut TxContext) { 
+        let c_type = type_name::get<C>();
+        let gekacha_type = type_name::get<NFT<Gekacha>>();
+        transfer::public_transfer(abyss_nft, tx_context::sender(ctx));
+        assert!(type_name::into_string(copy c_type) == type_name::into_string(gekacha_type), 1);
+        assert!(guessing.guess_open, 11);
         assert!(guessing.final_winner_open, 10);
         let guesseraddress = tx_context::sender(ctx);
         if (!vec_map::contains(&guessing.guessers, &guesseraddress)) {
@@ -105,9 +103,10 @@ module aw_guessing::GUESSING{
     }
 
     // select player
-    public entry fun guess<C:key>(_abyss_nft: &NFT<C>, guessing: &mut Guessing, choice: String, ctx: &mut TxContext) {
+    public entry fun guess<C: key + store>(abyss_nft: C, guessing: &mut Guessing, choice: String, ctx: &mut TxContext) {
         let c_type = type_name::get<C>();
-        let gekacha_type = type_name::get<Gekacha>();
+        let gekacha_type = type_name::get<NFT<Gekacha>>();
+        transfer::public_transfer(abyss_nft, tx_context::sender(ctx));
         assert!(type_name::into_string(copy c_type) == type_name::into_string(gekacha_type), 1);
         assert!(guessing.guess_open, 11);
         //assert!(*vec_map::get(&guessing.ticket_consume, &object::id(abyss_nft)) < 7, 11);
@@ -124,6 +123,46 @@ module aw_guessing::GUESSING{
         }
     }
 
+    public entry fun guess_first<C: key + store>(abyss_nft: C, guessing: &mut Guessing, choice: String, ctx: &mut TxContext) {
+        let c_type = type_name::get<C>();
+        let gekacha_type = type_name::get<NFT<Gekacha>>();
+        assert!(type_name::into_string(copy c_type) == type_name::into_string(gekacha_type), 1);
+        transfer::public_transfer(abyss_nft, tx_context::sender(ctx));
+        assert!(guessing.guess_open, 11);
+        //assert!(*vec_map::get(&guessing.ticket_consume, &object::id(abyss_nft)) < 7, 11);
+
+        let guesseraddress = tx_context::sender(ctx);
+        if (!vec_map::contains(&guessing.guessers, &guesseraddress)) {
+            let choicet:VecMap<u64, String> = vec_map::empty();
+            vec_map::insert(&mut choicet, 1, choice);
+            vec_map::insert(&mut guessing.guessers, guesseraddress, Guesser { guesser: tx_context::sender(ctx),choice : choicet, score: 0 });
+        }
+        else{
+            let guesser = vec_map::get_mut(&mut guessing.guessers, &guesseraddress);
+            vec_map::insert(&mut guesser.choice, 1, choice);
+        }
+    }
+
+    public entry fun guess_sixth<C: key + store>(abyss_nft: C, guessing: &mut Guessing, choice: String, ctx: &mut TxContext) {
+        let c_type = type_name::get<C>();
+        let gekacha_type = type_name::get<NFT<Gekacha>>();
+        assert!(type_name::into_string(copy c_type) == type_name::into_string(gekacha_type), 1);
+        transfer::public_transfer(abyss_nft, tx_context::sender(ctx));
+        assert!(guessing.guess_open, 11);
+        //assert!(*vec_map::get(&guessing.ticket_consume, &object::id(abyss_nft)) < 7, 11);
+
+        let guesseraddress = tx_context::sender(ctx);
+        if (!vec_map::contains(&guessing.guessers, &guesseraddress)) {
+            let choicet:VecMap<u64, String> = vec_map::empty();
+            vec_map::insert(&mut choicet, 6, choice);
+            vec_map::insert(&mut guessing.guessers, guesseraddress, Guesser { guesser: tx_context::sender(ctx),choice : choicet, score: 0 });
+        }
+        else{
+            let guesser = vec_map::get_mut(&mut guessing.guessers, &guesseraddress);
+            vec_map::insert(&mut guesser.choice, 6, choice);
+        }
+    }
+
     public entry fun set_round(_: &GUESSINGOWNER, guessing: &mut Guessing, round: u64) {
         guessing.round = round;
     }
@@ -136,23 +175,23 @@ module aw_guessing::GUESSING{
         guessing.guess_open = status;
     }
 
-    public entry fun update_gueeser_score(_: &GUESSINGOWNER, guessing: &mut Guessing, score: u64, guesseraddress:address) {
-        if (vec_map::contains(&guessing.guessers, &guesseraddress)) {
-            let guesser = vec_map::get_mut(&mut guessing.guessers, &guesseraddress);
-            guesser.score = score;
-        }
-    }
+    // public entry fun update_gueeser_score(_: &GUESSINGOWNER, guessing: &mut Guessing, score: u64, guesseraddress:address) {
+    //     if (vec_map::contains(&guessing.guessers, &guesseraddress)) {
+    //         let guesser = vec_map::get_mut(&mut guessing.guessers, &guesseraddress);
+    //         guesser.score = score;
+    //     }
+    // }
 
-    public entry fun update_boss_score(_: &GUESSINGOWNER, guessing: &mut Guessing, scoreA: u64, scoreB: u64,scoreC: u64,scoreD: u64,) {
-        vector::pop_back(&mut guessing.bosses);
-        vector::pop_back(&mut guessing.bosses);
-        vector::pop_back(&mut guessing.bosses);
-        vector::pop_back(&mut guessing.bosses);
-        vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"A"), score: scoreA});
-        vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"B"), score: scoreB});
-        vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"C"), score: scoreC});
-        vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"D"), score: scoreD});
-    }
+    // public entry fun update_boss_score(_: &GUESSINGOWNER, guessing: &mut Guessing, scoreA: u64, scoreB: u64,scoreC: u64,scoreD: u64,) {
+    //     vector::pop_back(&mut guessing.bosses);
+    //     vector::pop_back(&mut guessing.bosses);
+    //     vector::pop_back(&mut guessing.bosses);
+    //     vector::pop_back(&mut guessing.bosses);
+    //     vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"A"), score: scoreA});
+    //     vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"B"), score: scoreB});
+    //     vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"C"), score: scoreC});
+    //     vector::push_back(&mut guessing.bosses, Boss {name: string::utf8(b"D"), score: scoreD});
+    // }
 
     // set players
     // public entry fun close(_: &GAMBLINGOwner, guessing: &mut Guessing, round: u8, winner: String) {
