@@ -9,9 +9,6 @@ module aw_guessing::GUESSING{
     use examples::collection::Gekacha;
     use nft::souffl3::NFT;
 
-    // Rounds
-    const TOTAL_ROUNDS: u64 = 6;
-
     // GuessingOwner
     struct GUESSINGOWNER has key, store
     {
